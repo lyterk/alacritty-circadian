@@ -30,9 +30,11 @@ lock = Lock()
 thread_list = []
 
 
-def check_path(p: Path):
+def check_path(p: Path) -> Path:
+    p = p.expanduser()
     if not p.exists():
         sys.exit(f"[ERROR] Critical file {p} does not exist, check your configurations")
+    return p
 
 
 config_path_str = (
@@ -65,20 +67,20 @@ parser.add_argument(
     help="Location of your `circadian.toml` file",
 )
 args = parser.parse_args()
-print(list(alacritty_path.iterdir()))
-check_path(args.alacritty_source)
-check_path(args.circadian_path)
+alacritty_source = check_path(args.alacritty_source)
+circadian_path = check_path(args.circadian_path)
+alacritty_dest = args.alacritty_dest.expanduser()
 
-if args.alacritty_source == args.alacritty_dest:
+if alacritty_source == alacritty_dest:
     print(
         "[WARN] Your alacritty source and destination files are the same. This file will be mutated twice daily."
     )
     print("[WARN] You may wish to keep a source alacritty.toml in source control.")
 
-with open(args.alacritty_source) as f:
+with open(alacritty_source) as f:
     config = load_toml(f)
 
-with open(args.circadian_path, "r") as f:
+with open(circadian_path, "r") as f:
     circadian = load_toml(f)
 theme_folder_path = Path(str(circadian["theme-folder"])).expanduser()
 check_path(theme_folder_path)
@@ -98,7 +100,7 @@ def switch_theme(theme_data):
     Put theme_data in alacritty's config_data.
     """
     config["colors"] = theme_data["colors"]
-    with open(args.alacritty_dest, "w") as f:
+    with open(alacritty_dest, "w") as f:
         if not f.writable():
             print(f"{f} not writable")
         dump_toml(config, f)
